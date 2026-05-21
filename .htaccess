@@ -1,0 +1,98 @@
+############################################
+# Force HTTPS (redirect http -> https)
+############################################
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+############################################
+# Disable directory listing
+############################################
+Options -Indexes
+
+############################################
+# Protect .htaccess itself
+############################################
+<Files ".htaccess">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+############################################
+# Block .env, config, and other sensitive extensions
+############################################
+<FilesMatch "\.(env|ini|bak|sql|sh|json|crt|key)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+############################################
+# Block any .log files (prevent direct access to logs)
+############################################
+<FilesMatch "\.log$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Additionally explicitly deny common names (in case extension differs)
+<FilesMatch "^(error|php_error|access|debug|app|server)\.log$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+############################################
+# Protect specific backend / sensitive files (optional)
+# (Uncomment if you want to deny direct access to these)
+############################################
+# <FilesMatch "^(api|banners|batch|config|data|generate_roll|generate_rolls|get_centers|submit_enquiry|testimonials)\.php$">
+#     <IfModule mod_authz_core.c>
+#         Require all denied
+#     </IfModule>
+#     <IfModule !mod_authz_core.c>
+#         Order allow,deny
+#         Deny from all
+#     </IfModule>
+# </FilesMatch>
+
+############################################
+# Security headers
+############################################
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Content-Security-Policy "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'"
+</IfModule>
+
+
+RewriteEngine On
+
+# .php এক্সটেনশন লুকানো
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^([^/]+)$ $1.php [L]
+
+
