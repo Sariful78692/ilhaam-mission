@@ -1,33 +1,41 @@
 <?php
-// success.php
-require_once 'config.php';
+require_once dirname(__DIR__, 3) . '/config.php';
 
-// Enable error logging
 ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error.log');
+ini_set('display_startup_errors', 0);
+error_reporting(E_ALL);
 
 // Fetch contact information from the database
-$sql_contact = "SELECT address, phone_numbers, email, whatsapp_number, office_hours FROM contact_info LIMIT 1";
+$sql_contact = "SELECT * FROM contact_info LIMIT 1"; // Assuming one record for simplicity
 $result_contact = $conn->query($sql_contact);
-if (!$result_contact || $result_contact->num_rows === 0) {
-    error_log("Error fetching contact information: " . $conn->error);
-    die("Error fetching contact information.");
+
+if (!$result_contact) {
+    error_log('Contact query failed: ' . $conn->error);
+    die("Query failed: " . $conn->error);
 }
 $contact = $result_contact->fetch_assoc();
 
-// Fetch achievements from database
-$sql_achievements = "SELECT student_name, year, marks, photo_url, highlight FROM achievements WHERE status = 'active' ORDER BY year DESC, marks DESC";
-$result_achievements = $conn->query($sql_achievements);
-$achievements_by_year = [];
-if ($result_achievements) {
-    while ($row = $result_achievements->fetch_assoc()) {
-        $achievements_by_year[$row['year']][] = $row;
-    }
-} else {
-    error_log('Achievements query failed: ' . $conn->error);
-}
+// Define categories
+$categories = [
+    'Asst. Teacher',
+    'Non Teaching Staff',
+    'School & Mission In-Charge',
+    'Computer Teacher',
+    'Librarian',
+    'Gate Man',
+    'Head Mistress',
+];
 
+// Fetch staff data grouped by category
+$staff_data = [];
+foreach ($categories as $category) {
+    $stmt = $conn->prepare("SELECT name, qualification, role, photo_url FROM staff WHERE category = ? ORDER BY name");
+    $stmt->bind_param("s", $category);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $staff_data[$category] = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+}
 $conn->close();
 ?>
 
@@ -39,7 +47,7 @@ $conn->close();
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Our Success Stories – Children’s Corner Institution</title>
+    <title>Our Teachers & Staff – Children’s Corner Institution</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
@@ -172,7 +180,7 @@ $conn->close();
             text-align: center;
             margin-bottom: 1rem;
         }
-        .year-title {
+        .category-title {
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--accent);
@@ -193,11 +201,12 @@ $conn->close();
             box-shadow: var(--shadow);
         }
         .card img {
-            width: 100%;
-            height: 200px;
+            width: 120px;
+            height: 120px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 50%;
             margin-bottom: 1rem;
+            border: 3px solid var(--accent);
         }
         .card h4 {
             font-size: 1.25rem;
@@ -205,12 +214,13 @@ $conn->close();
             color: var(--accent);
             margin-bottom: 0.5rem;
         }
-        .card p {
+        .card .qualification {
             font-size: 0.9rem;
+            font-style: italic;
             color: var(--muted);
             margin-bottom: 0.5rem;
         }
-        .card .highlight {
+        .card .role {
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--accent);
@@ -336,7 +346,7 @@ $conn->close();
             .section-title h2 {
                 font-size: 2rem;
             }
-            .year-title {
+            .category-title {
                 font-size: 1.6rem;
             }
             .navbar-nav {
@@ -356,7 +366,8 @@ $conn->close();
                 height: 80px;
             }
             .card img {
-                height: 150px;
+                width: 100px;
+                height: 100px;
             }
         }
         @media (max-width: 768px) {
@@ -369,16 +380,17 @@ $conn->close();
             .section-title h2 {
                 font-size: 1.75rem;
             }
-            .year-title {
+            .category-title {
                 font-size: 1.4rem;
             }
             .card img {
-                height: 150px;
+                width: 100px;
+                height: 100px;
             }
             .card h4 {
                 font-size: 1.1rem;
             }
-            .card p, .card .highlight {
+            .card .qualification, .card .role {
                 font-size: 0.8rem;
             }
             .navbar-brand .logo-title {
@@ -402,19 +414,20 @@ $conn->close();
             .section-title h2 {
                 font-size: 1.5rem;
             }
-            .year-title {
+            .category-title {
                 font-size: 1.3rem;
             }
             .card {
                 padding: 0.8rem;
             }
             .card img {
-                height: 150px;
+                width: 80px;
+                height: 80px;
             }
             .card h4 {
                 font-size: 1rem;
             }
-            .card p, .card .highlight {
+            .card .qualification, .card .role {
                 font-size: 0.75rem;
             }
             .navbar-brand {
@@ -458,16 +471,16 @@ $conn->close();
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index" data-animate-hover="tada">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="about" data-animate-hover="tada">About Us</a></li>
-                    <li class="nav-item"><a class="nav-link" href="notice" data-animate-hover="tada">Notices</a></li>
-                    <li class="nav-item"><a class="nav-link" href="admission" data-animate-hover="tada">Admission</a></li>
-                    <li class="nav-item"><a class="nav-link" href="gallery" data-animate-hover="tada">Gallery</a></li>
-                    <li class="nav-item"><a class="nav-link" href="donation" data-animate-hover="tada">Donate</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="success" data-animate-hover="tada">Success Stories</a></li>
-                    <li class="nav-item"><a class="nav-link" href="activities" data-animate-hover="tada">Activities</a></li>
-                    <li class="nav-item"><a class="nav-link" href="faculty" data-animate-hover="tada">faculty</a></li>
-                    <li class="nav-item"><a class="nav-link" href="contact" data-animate-hover="tada">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="index">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="about">About Us</a></li>
+                    <li class="nav-item"><a class="nav-link" href="notice">Notices</a></li>
+                    <li class="nav-item"><a class="nav-link" href="admission">Admission</a></li>
+                    <li class="nav-item"><a class="nav-link" href="gallery">Gallery</a></li>
+                    <li class="nav-item"><a class="nav-link" href="donation">Donate</a></li>
+                    <li class="nav-item"><a class="nav-link" href="success">Success Stories</a></li>
+                    <li class="nav-item"><a class="nav-link" href="activities">Activities</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="faculty">faculty</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact">Contact</a></li>
                 </ul>
             </div>
         </div>
@@ -476,38 +489,31 @@ $conn->close();
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container hero-content">
-            <h1 class="animate__animated animate__fadeInDown"> Our Success Stories – Best Students of Each Year</h1>
-            <p class="animate__animated animate__fadeInUp">Celebrating excellence and hard work of our bright stars</p>
+            <h1 class="animate__animated animate__fadeInDown"> Our Teachers & Staff</h1>
+            <p class="animate__animated animate__fadeInUp">Meet the dedicated team behind Ilhaam Mission & Children’s Corner</p>
         </div>
     </section>
 
-    <!-- Achievements Section -->
+    <!-- Staff Section -->
     <section class="section">
         <div class="container">
-            <div class="section-title">
-                <h2>Hall of Fame</h2>
-            </div>
-            <?php if (!empty($achievements_by_year)): ?>
-                <?php foreach ($achievements_by_year as $year => $students): ?>
-                    <h3 class="year-title">Year: <?php echo htmlspecialchars($year); ?></h3>
+            <?php foreach ($categories as $category): ?>
+                <?php if (!empty($staff_data[$category])): ?>
+                    <h3 class="category-title"><?php echo htmlspecialchars($category); ?></h3>
                     <div class="row">
-                        <?php foreach ($students as $student): ?>
+                        <?php foreach ($staff_data[$category] as $staff): ?>
                             <div class="col-md-4 col-sm-6 col-12">
                                 <div class="card animate__animated animate__fadeIn">
-                                    <img src="<?php echo htmlspecialchars($student['photo_url']); ?>" alt="<?php echo htmlspecialchars($student['student_name']); ?>">
-                                    <h4><?php echo htmlspecialchars($student['student_name']); ?></h4>
-                                    <p>Scored: <?php echo htmlspecialchars($student['marks']); ?> in Final Exam</p>
-                                    <p class="highlight"><?php echo htmlspecialchars($student['highlight']); ?></p>
+                                    <img src="<?php echo htmlspecialchars($staff['photo_url'] ?: 'https://via.placeholder.com/150'); ?>" alt="<?php echo htmlspecialchars($staff['name']); ?>" class="img-fluid">
+                                    <h4><?php echo htmlspecialchars($staff['name']); ?></h4>
+                                    <p class="qualification"><?php echo htmlspecialchars($staff['qualification']); ?></p>
+                                    <p class="role"><?php echo htmlspecialchars($staff['role']); ?></p>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="text-center">
-                    <p class="text-muted">No achievements available at this time.</p>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </div>
     </section>
 
@@ -560,15 +566,19 @@ $conn->close();
     <script>
         // Animation Handler
         function handleAnimations() {
-            const elements = document.querySelectorAll('[data-animate]');
+            const elements = document.querySelectorAll('.animate-up, [data-animate]');
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const element = entry.target;
-                        const animation = element.getAttribute('data-animate');
-                        const delay = element.getAttribute('data-delay') || '0s';
-                        element.classList.add('animate__animated', 'animate__' + animation);
-                        element.style.animationDelay = delay;
+                        if (element.classList.contains('animate-up')) {
+                            element.classList.add('animated');
+                        } else {
+                            const animation = element.getAttribute('data-animate');
+                            const delay = element.getAttribute('data-delay') || '0s';
+                            element.classList.add('animate__animated', 'animate__' + animation);
+                            element.style.animationDelay = delay;
+                        }
                         observer.unobserve(element);
                     }
                 });

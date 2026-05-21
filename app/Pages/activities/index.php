@@ -1,9 +1,11 @@
 <?php
-require_once 'config.php';
+// activities.php
+require_once dirname(__DIR__, 3) . '/config.php';
 
+// Enable error logging
 ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
-error_reporting(E_ALL);
+ini_set('log_errors', 1);
+ini_set('error_log', dirname(__DIR__, 3) . '/storage/logs/php-error.log');
 
 // Fetch contact information from the database
 $sql_contact = "SELECT * FROM contact_info LIMIT 1"; // Assuming one record for simplicity
@@ -15,27 +17,18 @@ if (!$result_contact) {
 }
 $contact = $result_contact->fetch_assoc();
 
-// Define categories
-$categories = [
-    'Asst. Teacher',
-    'Non Teaching Staff',
-    'School & Mission In-Charge',
-    'Computer Teacher',
-    'Librarian',
-    'Gate Man',
-    'Head Mistress',
-];
-
-// Fetch staff data grouped by category
-$staff_data = [];
-foreach ($categories as $category) {
-    $stmt = $conn->prepare("SELECT name, qualification, role, photo_url FROM staff WHERE category = ? ORDER BY name");
-    $stmt->bind_param("s", $category);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $staff_data[$category] = $result->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
+// Fetch events from database
+$sql_events = "SELECT title, event_date, description, photo_url FROM events WHERE status = 'active' ORDER BY event_date DESC";
+$result_events = $conn->query($sql_events);
+$events = [];
+if ($result_events) {
+    while ($row = $result_events->fetch_assoc()) {
+        $events[] = $row;
+    }
+} else {
+    error_log('Events query failed: ' . $conn->error);
 }
+
 $conn->close();
 ?>
 
@@ -44,10 +37,7 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Our Teachers & Staff – Children’s Corner Institution</title>
+    <title>Recent Activities & Events – Children’s Corner Institution</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
@@ -180,13 +170,6 @@ $conn->close();
             text-align: center;
             margin-bottom: 1rem;
         }
-        .category-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin: 2rem 0 1rem;
-            text-align: center;
-        }
         .card {
             border: none;
             border-radius: 10px;
@@ -195,18 +178,22 @@ $conn->close();
             margin-bottom: 1.5rem;
             transition: var(--transition);
             text-align: center;
+            overflow: hidden;
         }
         .card:hover {
             transform: translateY(-5px);
             box-shadow: var(--shadow);
         }
         .card img {
-            width: 120px;
-            height: 120px;
+            width: 100%;
+            height: 200px;
             object-fit: cover;
-            border-radius: 50%;
+            border-radius: 8px;
             margin-bottom: 1rem;
-            border: 3px solid var(--accent);
+            transition: transform 0.3s ease-in-out;
+        }
+        .card:hover img {
+            transform: scale(1.1);
         }
         .card h4 {
             font-size: 1.25rem;
@@ -214,16 +201,16 @@ $conn->close();
             color: var(--accent);
             margin-bottom: 0.5rem;
         }
-        .card .qualification {
-            font-size: 0.9rem;
-            font-style: italic;
+        .card .date {
+            font-size: 0.85rem;
             color: var(--muted);
+            font-style: italic;
             margin-bottom: 0.5rem;
         }
-        .card .role {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--accent);
+        .card p {
+            font-size: 0.9rem;
+            color: var(--text);
+            margin-bottom: 0;
         }
         .footer {
             background: linear-gradient(45deg, var(--accent), var(--accent-hover));
@@ -287,6 +274,7 @@ $conn->close();
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             background: var(--foreground);
             padding: 8px;
+            animation: rotateLogo 5s infinite ease-in-out;
         }
         @keyframes rotateLogo {
             0% {
@@ -346,8 +334,8 @@ $conn->close();
             .section-title h2 {
                 font-size: 2rem;
             }
-            .category-title {
-                font-size: 1.6rem;
+            .section-title p {
+                font-size: 1rem;
             }
             .navbar-nav {
                 text-align: center;
@@ -366,8 +354,7 @@ $conn->close();
                 height: 80px;
             }
             .card img {
-                width: 100px;
-                height: 100px;
+                height: 180px;
             }
         }
         @media (max-width: 768px) {
@@ -380,17 +367,13 @@ $conn->close();
             .section-title h2 {
                 font-size: 1.75rem;
             }
-            .category-title {
-                font-size: 1.4rem;
-            }
             .card img {
-                width: 100px;
-                height: 100px;
+                height: 150px;
             }
             .card h4 {
                 font-size: 1.1rem;
             }
-            .card .qualification, .card .role {
+            .card .date, .card p {
                 font-size: 0.8rem;
             }
             .navbar-brand .logo-title {
@@ -414,20 +397,16 @@ $conn->close();
             .section-title h2 {
                 font-size: 1.5rem;
             }
-            .category-title {
-                font-size: 1.3rem;
-            }
             .card {
                 padding: 0.8rem;
             }
             .card img {
-                width: 80px;
-                height: 80px;
+                height: 150px;
             }
             .card h4 {
                 font-size: 1rem;
             }
-            .card .qualification, .card .role {
+            .card .date, .card p {
                 font-size: 0.75rem;
             }
             .navbar-brand {
@@ -478,8 +457,8 @@ $conn->close();
                     <li class="nav-item"><a class="nav-link" href="gallery">Gallery</a></li>
                     <li class="nav-item"><a class="nav-link" href="donation">Donate</a></li>
                     <li class="nav-item"><a class="nav-link" href="success">Success Stories</a></li>
-                    <li class="nav-item"><a class="nav-link" href="activities">Activities</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="faculty">faculty</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="activities">Activities</a></li>
+                    <li class="nav-item"><a class="nav-link" href="faculty">faculty</a></li>
                     <li class="nav-item"><a class="nav-link" href="contact">Contact</a></li>
                 </ul>
             </div>
@@ -489,31 +468,35 @@ $conn->close();
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container hero-content">
-            <h1 class="animate__animated animate__fadeInDown"> Our Teachers & Staff</h1>
-            <p class="animate__animated animate__fadeInUp">Meet the dedicated team behind Ilhaam Mission & Children’s Corner</p>
+            <h1 class="animate__animated animate__fadeInDown">Recent Activities & Events</h1>
+            <p class="animate__animated animate__fadeInUp">A glimpse of our vibrant campus life at Ilhaam Mission</p>
         </div>
     </section>
 
-    <!-- Staff Section -->
+    <!-- Events Section -->
     <section class="section">
         <div class="container">
-            <?php foreach ($categories as $category): ?>
-                <?php if (!empty($staff_data[$category])): ?>
-                    <h3 class="category-title"><?php echo htmlspecialchars($category); ?></h3>
-                    <div class="row">
-                        <?php foreach ($staff_data[$category] as $staff): ?>
-                            <div class="col-md-4 col-sm-6 col-12">
-                                <div class="card animate__animated animate__fadeIn">
-                                    <img src="<?php echo htmlspecialchars($staff['photo_url'] ?: 'https://via.placeholder.com/150'); ?>" alt="<?php echo htmlspecialchars($staff['name']); ?>" class="img-fluid">
-                                    <h4><?php echo htmlspecialchars($staff['name']); ?></h4>
-                                    <p class="qualification"><?php echo htmlspecialchars($staff['qualification']); ?></p>
-                                    <p class="role"><?php echo htmlspecialchars($staff['role']); ?></p>
-                                </div>
+            <div class="section-title">
+                <h2>Our Recent Events</h2>
+            </div>
+            <div class="row">
+                <?php if (!empty($events)): ?>
+                    <?php foreach ($events as $event): ?>
+                        <div class="col-md-4 col-sm-6 col-12">
+                            <div class="card animate__animated animate__fadeIn">
+                                <img src="<?php echo htmlspecialchars($event['photo_url']); ?>" alt="<?php echo htmlspecialchars($event['title']); ?>">
+                                <h4><?php echo htmlspecialchars($event['title']); ?></h4>
+                                <p class="date"><?php echo date('jS F Y', strtotime($event['event_date'])); ?></p>
+                                <p><?php echo htmlspecialchars($event['description']); ?></p>
                             </div>
-                        <?php endforeach; ?>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-12 text-center">
+                        <p class="text-muted">No events available at this time.</p>
                     </div>
                 <?php endif; ?>
-            <?php endforeach; ?>
+            </div>
         </div>
     </section>
 
@@ -537,6 +520,9 @@ $conn->close();
                     <ul class="list-unstyled">
                         <li><a href="index.php" class="animate__animated" data-animate-hover="pulse">Home</a></li>
                         <li><a href="about.php" class="animate__animated" data-animate-hover="pulse">About Us</a></li>
+                        <li><a href="courses.php" class="animate__animated" data-animate-hover="pulse">Courses</a></li>
+                        <li><a href="results.php" class="animate__animated" data-animate-hover="pulse">Results</a></li>
+                        <li><a href="contact.php" class="animate__animated" data-animate-hover="pulse">Contact</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4 mb-4">
@@ -551,7 +537,7 @@ $conn->close();
                 </div>
             </div>
             <div class="text-center mt-4">
-                <p class="animate__animated" data-animate="fadeInUp">&copy; 2025 Children's Corner Institution & Ilhaam Mission. All Rights Reserved.</p>
+                <p class="animate__animated" data-animate="fadeInUp">&copy; 2025 Children's Corner Institution X Ilhaam Mission. All Rights Reserved.</p>
             </div>
         </div>
     </footer>
@@ -599,7 +585,6 @@ $conn->close();
             });
         }
 
-        // Initialize animations on page load
         document.addEventListener('DOMContentLoaded', () => {
             handleAnimations();
         });

@@ -1,6 +1,6 @@
 <?php
 // Include database configuration
-require_once 'config.php';
+require_once dirname(__DIR__, 3) . '/config.php';
 
 // Fetch contact information from the database
 $sql_contact = "SELECT * FROM contact_info LIMIT 1"; // Assuming one record for simplicity

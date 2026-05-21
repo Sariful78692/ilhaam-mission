@@ -1,11 +1,11 @@
 <?php
 // gallery.php
-require_once 'config.php';
+require_once dirname(__DIR__, 3) . '/config.php';
 
 // Enable error logging
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error.log');
+ini_set('error_log', dirname(__DIR__, 3) . '/storage/logs/php-error.log');
 
 // Check database connection
 if (!$conn) {

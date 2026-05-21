@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const options = {
-                key: 'rzp_test_RGlwIrCZ1EddKl',
+                key: orderData.key_id,
                 amount: 10000,
                 currency: 'INR',
                 name: 'Ilhaam Mission',

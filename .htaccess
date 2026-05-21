@@ -13,6 +13,15 @@
 Options -Indexes
 
 ############################################
+# Protect application internals
+############################################
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{THE_REQUEST} \s/+((app|storage)(/|\s)) [NC]
+    RewriteRule ^ - [F]
+</IfModule>
+
+############################################
 # Protect .htaccess itself
 ############################################
 <Files ".htaccess">
@@ -90,9 +99,16 @@ Options -Indexes
 
 RewriteEngine On
 
+# Compatibility routes for moved JavaScript assets
+RewriteRule ^admission\.js$ public/assets/js/admission.js [L]
+RewriteRule ^admit\.js$ public/assets/js/admit.js [L]
+
+# Public page routes
+RewriteRule ^$ app/Pages/home/index.php [L]
+RewriteRule ^index(?:\.php)?$ app/Pages/home/index.php [L]
+RewriteRule ^(about|activities|admission|admit|contact|donation|faculty|gallery|notice|success)(?:\.php)?/?$ app/Pages/$1/index.php [L]
+
 # .php এক্সটেনশন লুকানো
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
 RewriteRule ^([^/]+)$ $1.php [L]
-
-

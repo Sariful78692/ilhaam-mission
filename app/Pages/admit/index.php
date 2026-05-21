@@ -1,42 +1,125 @@
 <?php
-// notice.php
-require_once 'config.php';
+ob_start();
+session_start();
 
-// Enable error logging
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
+require_once dirname(__DIR__, 3) . '/config.php';
+
 ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error.log');
+ini_set('error_log', dirname(__DIR__, 3) . '/storage/logs/php-error.log');
+error_reporting(E_ALL);
 
-// Fetch notices from database
-$sql_notifications = "SELECT title, text, date, link, type, new_duration FROM notifications WHERE status = 'active' ORDER BY date DESC";
-$result_notifications = $conn->query($sql_notifications);
-$notifications = [];
-if ($result_notifications) {
-    while ($row = $result_notifications->fetch_assoc()) {
-        $notifications[] = $row;
+$error_message = '';
+
+$max_attempts = 5;
+$lockout_time = 300;
+$attempt_key = 'admit_attempts';
+$lockout_key = 'admit_lockout';
+
+if (!isset($_SESSION[$attempt_key])) {
+    $_SESSION[$attempt_key] = 0;
+}
+
+if (isset($_SESSION[$lockout_key]) && $_SESSION[$lockout_key] > time()) {
+    $error_message = 'Too many attempts. Try again in ' . ($_SESSION[$lockout_key] - time()) . ' seconds.';
+    error_log("Rate limit exceeded: IP=" . $_SERVER['REMOTE_ADDR']);
+} elseif ($_SESSION[$attempt_key] >= $max_attempts) {
+    $_SESSION[$lockout_key] = time() + $lockout_time;
+    $error_message = 'Too many attempts. Please wait 5 minutes.';
+    error_log("Rate limit triggered: IP=" . $_SERVER['REMOTE_ADDR']);
+}
+
+$roll_number = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['roll_number']) && empty($error_message)) {
+    $_SESSION[$attempt_key]++;
+    $roll_number = trim($_POST['roll_number']);
+    error_log("Admit card search: IP=" . $_SERVER['REMOTE_ADDR'] . ", Roll=" . $roll_number);
+
+    $captcha_success = (object) ['success' => true]; // reCAPTCHA disabled for testing
+
+    if (empty($roll_number)) {
+        $error_message = "Please enter a valid roll number (letters and numbers only).";
+        error_log("Empty roll number submitted: IP=" . $_SERVER['REMOTE_ADDR']);
+    } elseif (!preg_match('/^[a-zA-Z0-9]+$/', $roll_number)) {
+        $error_message = "Invalid roll number. Please use only letters and numbers.";
+        error_log("Invalid roll number format: $roll_number");
+    } else {
+        if (!$conn) {
+            $error_message = "Database connection failed. Please try again later.";
+            error_log("Database connection failed: " . $conn->connect_error);
+        } else {
+            $stmt = $conn->prepare("SELECT pdf_url FROM admit_cards WHERE roll_number = ?");
+            if (!$stmt) {
+                $error_message = "Database query preparation failed.";
+                error_log("Prepare failed: " . $conn->error);
+            } else {
+                $stmt->bind_param("s", $roll_number);
+                if (!$stmt->execute()) {
+                    $error_message = "Database query execution failed.";
+                    error_log("Query execution failed: " . $stmt->error);
+                } else {
+                    $result = $stmt->get_result();
+                    if ($result->num_rows > 0) {
+                        $admit = $result->fetch_assoc();
+                        $pdf_url = $admit['pdf_url'];
+                        error_log("Found PDF URL: $pdf_url for roll number: $roll_number");
+                        if (filter_var($pdf_url, FILTER_VALIDATE_URL)) {
+                            $_SESSION[$attempt_key] = 0;
+                            header("Location: $pdf_url", true, 302);
+                            $stmt->close();
+                            $conn->close();
+                            ob_end_clean();
+                            exit;
+                        } else {
+                            $error_message = "Invalid PDF URL. Please contact support.";
+                            error_log("Invalid PDF URL: $pdf_url for roll number: $roll_number");
+                        }
+                    } else {
+                        $error_message = "No admit card found for this roll number. Please check and try again.";
+                        error_log("No admit card found for roll number: $roll_number");
+                    }
+                }
+                $stmt->close();
+            }
+        }
     }
-} else {
-    error_log('Notifications query failed: ' . $conn->error);
 }
 
-// Fetch contact information for footer
-$sql_contact = "SELECT * FROM contact_info LIMIT 1";
-$result_contact = $conn->query($sql_contact);
-if (!$result_contact) {
-    error_log('Contact query failed: ' . $conn->error);
-    $contact = ['phone_numbers' => '9091850061, 9163588008', 'email' => 'childrenscorner85@gmail.com', 'whatsapp_number' => '9163588008', 'address' => 'Sangrampur, Kalikapota, West Bengal 743355', 'office_hours' => 'Mon - Sat: 9 AM - 5 PM'];
+$sql_contact = "SELECT address, phone_numbers, email, whatsapp_number, office_hours FROM contact_info LIMIT 1";
+$result_contact = $conn ? $conn->query($sql_contact) : false;
+if (!$result_contact || $result_contact->num_rows === 0) {
+    error_log("Error fetching contact info: " . ($conn ? $conn->error : 'No database connection'));
+    $contact = [
+        'address' => 'Sangrampur, Kalikapota, West Bengal 743355',
+        'phone_numbers' => '9091850061, 9163588008',
+        'email' => 'childrenscorner85@gmail.com',
+        'whatsapp_number' => '9163588008',
+        'office_hours' => 'Mon - Sat: 9 AM - 5 PM'
+    ];
 } else {
-    $contact = $result_contact->fetch_assoc() ?: ['phone_numbers' => '9091850061, 9163588008', 'email' => 'childrenscorner85@gmail.com', 'whatsapp_number' => '9163588008', 'address' => 'Sangrampur, Kalikapota, West Bengal 743355', 'office_hours' => 'Mon - Sat: 9 AM - 5 PM'];
+    $contact = $result_contact->fetch_assoc();
 }
-$conn->close();
+
+if ($conn) {
+    $conn->close();
+}
+ob_end_flush();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Notices – Ilhaam Mission</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Download Admit Card - Children's Corner Institution X Ilhaam Mission</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
@@ -142,6 +225,18 @@ $conn->close();
         .nav-link[data-animate-hover]:hover {
             animation: animate__tada 0.5s;
         }
+        .breadcrumb-section {
+            background: var(--gradient-accent);
+            color: #ffffff;
+            padding: 2rem 0;
+        }
+        .breadcrumb-item a {
+            color: #ffffff;
+            transition: var(--transition);
+        }
+        .breadcrumb-item a:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
         .section {
             padding: 3rem 0;
             background-color: var(--background);
@@ -171,62 +266,79 @@ $conn->close();
             margin: 1rem auto;
             border-radius: var(--radius);
         }
-        .card {
+        .form-card {
             background: var(--foreground);
-            border: none;
+            padding: 2rem;
             border-radius: var(--radius);
-            box-shadow: var(--shadow-light);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            position: relative;
-            transition: var(--transition);
-        }
-        .card:hover {
-            transform: translateY(-5px);
             box-shadow: var(--shadow);
+            transition: var(--transition);
+            max-width: 500px;
+            margin: 0 auto;
         }
-        .card h4 {
-            font-size: 1.25rem;
-            font-weight: 600;
+        .form-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .form-icon {
             color: var(--accent);
-            margin-bottom: 0.5rem;
         }
-        .card p {
-            font-size: 0.9rem;
-            color: var(--text);
-            margin-bottom: 0.5rem;
-        }
-        .card .date {
-            font-size: 0.85rem;
-            color: var(--text);
-            font-style: italic;
-        }
-        .card .btn {
-            background: var(--gradient-accent);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
+        .form-control {
             border-radius: var(--radius);
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-top: 0.5rem;
+            border: 2px solid var(--border);
+            padding: 0.75rem;
             transition: var(--transition);
         }
-        .card .btn:hover {
-            background: var(--gradient-primary);
+        .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 0.2rem rgba(58, 12, 163, 0.25);
+        }
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        .invalid-feedback {
+            color: #dc3545;
+            font-size: 0.9rem;
+        }
+        .btn-download {
+            background: var(--gradient-accent);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: var(--radius);
+            color: #ffffff;
+            width: 100%;
+            transition: var(--transition);
+        }
+        .btn-download:hover {
             transform: translateY(-3px);
             box-shadow: var(--shadow);
         }
-        .new-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--gradient-accent);
-            color: white;
-            font-size: 0.75rem;
+        .btn-download:disabled {
+            background: var(--muted);
+            cursor: not-allowed;
+        }
+        .error-msg {
+            color: #dc3545;
             font-weight: 600;
-            padding: 0.25rem 0.5rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+        .contact-card {
+            background: var(--foreground);
+            padding: 1.5rem;
             border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .contact-card i {
+            color: var(--accent);
+            margin-right: 0.5rem;
         }
         .footer {
             background: var(--gradient-accent);
@@ -261,26 +373,29 @@ $conn->close();
             transform: translateY(-3px);
             animation: animate__pulse 0.5s;
         }
-        .whatsapp_float {
+        .back-to-top {
             position: fixed;
-            width: 60px;
-            height: 60px;
-            bottom: 20px;
-            right: 20px;
-            background-color: #25d366;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--accent);
+            color: #ffffff;
             border-radius: 50%;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 9999;
-            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 1000;
         }
-        .whatsapp_float img {
-            width: 35px;
-            margin-top: 12px;
+        .back-to-top.show {
+            opacity: 1;
         }
-        .whatsapp_float:hover {
-            transform: scale(1.1);
-            background-color: #20b858;
+        .back-to-top:hover {
+            background: var(--accent-hover);
+            transform: translateY(-3px);
+            animation: animate__pulse 0.5s;
         }
         .academy-logo {
             width: 96px;
@@ -386,6 +501,9 @@ $conn->close();
                 margin: 5px 0;
                 font-size: clamp(0.85rem, 2.8vw, 0.95rem);
             }
+            .form-card, .contact-card {
+                padding: 1.5rem;
+            }
         }
         @media (max-width: 576px) {
             .navbar-brand {
@@ -414,9 +532,6 @@ $conn->close();
             .shape {
                 display: none;
             }
-            .card { padding: 1rem; }
-            .card h4 { font-size: 1.1rem; }
-            .card p, .card .date, .card .btn { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -444,60 +559,62 @@ $conn->close();
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="index" data-animate-hover="tada">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="about" data-animate-hover="tada">About Us</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="notice" data-animate-hover="tada">Notices</a></li>
-                    <li class="nav-item"><a class="nav-link" href="admission" data-animate-hover="tada">Admission</a></li>
+                    <li class="nav-item"><a class="nav-link" href="notice" data-animate-hover="tada">Notices</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="admission" data-animate-hover="tada">Admission</a></li>
                     <li class="nav-item"><a class="nav-link" href="gallery" data-animate-hover="tada">Gallery</a></li>
                     <li class="nav-item"><a class="nav-link" href="donation" data-animate-hover="tada">Donate</a></li>
                     <li class="nav-item"><a class="nav-link" href="success" data-animate-hover="tada">Success Stories</a></li>
                     <li class="nav-item"><a class="nav-link" href="activities" data-animate-hover="tada">Activities</a></li>
-                    <li class="nav-item"><a class="nav-link" href="faculty" data-animate-hover="tada">faculty</a></li>
+                    <li class="nav-item"><a class="nav-link" href="faculty" data-animate-hover="tada">Staff</a></li>
                     <li class="nav-item"><a class="nav-link" href="contact" data-animate-hover="tada">Contact</a></li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Notices Section -->
+    <!-- Breadcrumb Section -->
+    <section class="breadcrumb-section animate__animated" data-animate="fadeIn">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item animate__animated" data-animate="bounceIn" data-delay="0.1s"><a href="index.php">Home</a></li>
+                    <li class="breadcrumb-item active animate__animated" data-animate="bounceIn" data-delay="0.3s" aria-current="page">Admit Card</li>
+                </ol>
+            </nav>
+            <h1 class="text-white animate__animated" data-animate="fadeInDown">Download Admit Card</h1>
+            <p class="lead text-white mb-0 animate__animated" data-animate="fadeInUp">Enter your roll number to download your admit card</p>
+        </div>
+    </section>
+
+    <!-- Admit Card Form Section -->
     <section class="section animate__animated" data-animate="fadeIn">
         <div class="container">
-            <div class="section-title animate__animated" data-animate="fadeInDown">
-                <h2>Notices – Ilhaam Mission</h2>
+            <div class="section-title text-center animate__animated" data-animate="fadeInDown">
+                <h2>Admit Card Download</h2>
                 <div class="title-divider"></div>
-                <p>Stay updated with the latest announcements and updates from Ilhaam Mission</p>
+                <p>Securely download your personalized admit card</p>
             </div>
-            <div class="row">
-                <?php if (!empty($notifications)): ?>
-                    <?php
-                    $currentDate = new DateTime();
-                    foreach ($notifications as $notification):
-                        $notificationDate = new DateTime($notification['date']);
-                        $interval = $currentDate->diff($notificationDate);
-                        $isNew = $interval->days <= ($notification['new_duration'] ?: 7);
-                    ?>
-                    <div class="col-md-4 col-sm-6 col-12">
-                        <div class="card animate__animated" data-animate="fadeInUp">
-                            <?php if ($isNew): ?>
-                                <span class="new-badge">New</span>
-                            <?php endif; ?>
-                            <h4><?php echo htmlspecialchars($notification['title']); ?></h4>
-                            <p><?php echo htmlspecialchars($notification['text']); ?></p>
-                            <div class="date">Posted on: <?php echo htmlspecialchars($notification['date']); ?></div>
-                            <?php if (!empty($notification['link'])): ?>
-                                <a href="<?php echo htmlspecialchars($notification['link']); ?>" 
-                                   class="btn" 
-                                   <?php echo $notification['type'] === 'pdf' ? 'download' : 'target="_blank"'; ?>>
-                                    <i class="fas <?php echo $notification['type'] === 'pdf' ? 'fa-file-pdf' : 'fa-link'; ?> me-2"></i>
-                                    <?php echo $notification['type'] === 'pdf' ? 'Download PDF' : 'View Details'; ?>
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="col-12 text-center">
-                        <p class="text-muted">No notices available at this time.</p>
-                    </div>
-                <?php endif; ?>
+            <div class="form-card animate__animated" data-animate="fadeInUp">
+                <div class="text-center mb-4">
+                    <i class="fas fa-id-card fa-3x form-icon mb-3 animate__animated" data-animate="zoomIn"></i>
+                    <h4>Enter Roll Number</h4>
+                    <p class="text-muted">Format: Letters and numbers only</p>
+                </div>
+                <form id="admitForm" method="POST" action="admit.php" class="needs-validation" novalidate>
+                    <input type="text" id="rollInput" name="roll_number" class="form-control mb-3 animate__animated" data-animate="fadeIn" placeholder="Enter Roll Number" value="<?php echo htmlspecialchars($roll_number); ?>" required>
+                    <div class="invalid-feedback">Please enter a valid roll number (letters and numbers only).</div>
+                    <button type="submit" class="btn btn-download animate__animated" data-animate="fadeIn" data-animate-hover="pulse" id="downloadButton"><i class="fas fa-download me-2"></i>Download Admit Card</button>
+                    <?php if ($error_message): ?>
+                        <p class="error-msg animate__animated" data-animate="fadeIn"><?php echo htmlspecialchars($error_message); ?></p>
+                    <?php endif; ?>
+                </form>
+            </div>
+            <div class="contact-card animate__animated" data-animate="fadeInUp" data-delay="0.2s">
+                <h3>Contact Us for Support</h3>
+                <p><i class="fas fa-phone"></i>Phone: <?php echo htmlspecialchars($contact['phone_numbers']); ?></p>
+                <p><i class="fas fa-envelope"></i>Email: <a href="mailto:<?php echo htmlspecialchars($contact['email']); ?>"><?php echo htmlspecialchars($contact['email']); ?></a></p>
+                <p><i class="fab fa-whatsapp"></i>WhatsApp: <a href="https://wa.me/<?php echo htmlspecialchars(str_replace('+', '', $contact['whatsapp_number'])); ?>" target="_blank"><?php echo htmlspecialchars($contact['whatsapp_number']); ?></a></p>
+                <p class="text-muted">For any issues with downloading your admit card, please reach out to us.</p>
             </div>
         </div>
     </section>
@@ -508,7 +625,7 @@ $conn->close();
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <h5 class="animate__animated" data-animate="fadeIn">About Us</h5>
-                    <p class="animate__animated" data-animate="fadeInUp" data-delay="0.1s">Children’s Corner Institution X Ilhaam Mission is dedicated to the holistic development of vulnerable and marginalized populations, ensuring success through education, health, and livelihood initiatives.</p>
+                    <p class="animate__animated" data-animate="fadeInUp" data-delay="0.1s">Children’s Corner Institution & Ilhaam Mission is dedicated to the holistic development of vulnerable and marginalized populations, ensuring success through education, health, and livelihood initiatives.</p>
                     <div class="social-icons">
                         <a href="https://facebook.com/childrenscorner" target="_blank" class="animate__animated" data-animate-hover="pulse"><i class="fab fa-facebook-f"></i></a>
                         <a href="https://instagram.com/childrenscorner" target="_blank" class="animate__animated" data-animate-hover="pulse"><i class="fab fa-instagram"></i></a>
@@ -531,7 +648,7 @@ $conn->close();
                         <li class="mb-3 animate__animated" data-animate="fadeInUp" data-delay="0.2s"><i class="fas fa-phone me-2"></i><?php echo htmlspecialchars($contact['phone_numbers']); ?></li>
                         <li class="mb-3 animate__animated" data-animate="fadeInUp" data-delay="0.3s"><i class="fas fa-envelope me-2"></i><a href="mailto:<?php echo htmlspecialchars($contact['email']); ?>"><?php echo htmlspecialchars($contact['email']); ?></a></li>
                         <li class="mb-3 animate__animated" data-animate="fadeInUp" data-delay="0.4s"><i class="fas fa-clock me-2"></i><?php echo htmlspecialchars($contact['office_hours']); ?></li>
-                        <li class="mb-3 animate__animated" data-animate="fadeInUp" data-delay="0.5s"><i class="fab fa-whatsapp me-2"></i><a href="https://wa.me/<?php echo htmlspecialchars($contact['whatsapp_number']); ?>" target="_blank"><?php echo htmlspecialchars($contact['whatsapp_number']); ?></a></li>
+                        <li class="mb-3 animate__animated" data-animate="fadeInUp" data-delay="0.5s"><i class="fab fa-whatsapp me-2"></i><a href="https://wa.me/<?php echo htmlspecialchars(str_replace('+', '', $contact['whatsapp_number'])); ?>" target="_blank"><?php echo htmlspecialchars($contact['whatsapp_number']); ?></a></li>
                     </ul>
                 </div>
             </div>
@@ -541,49 +658,11 @@ $conn->close();
         </div>
     </footer>
 
-    <!-- WhatsApp Floating Button -->
-    <a href="https://wa.me/<?php echo htmlspecialchars($contact['whatsapp_number']); ?>" target="_blank" class="whatsapp_float" title="Chat with us on WhatsApp">
-        <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp" />
-    </a>
+    <!-- Back to Top Button -->
+    <a href="#" class="back-to-top animate__animated" data-animate="bounceIn"><i class="fas fa-chevron-up"></i></a>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Animation Handler
-        function handleAnimations() {
-            const elements = document.querySelectorAll('[data-animate]');
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const element = entry.target;
-                        const animation = element.getAttribute('data-animate');
-                        const delay = element.getAttribute('data-delay') || '0s';
-                        element.classList.add('animate__animated', 'animate__' + animation);
-                        element.style.animationDelay = delay;
-                        observer.unobserve(element);
-                    }
-                });
-            }, { threshold: 0.2 });
-
-            elements.forEach(element => observer.observe(element));
-
-            // Handle hover animations
-            const hoverElements = document.querySelectorAll('[data-animate-hover]');
-            hoverElements.forEach(element => {
-                element.addEventListener('mouseenter', () => {
-                    const animation = element.getAttribute('data-animate-hover');
-                    element.classList.add('animate__animated', 'animate__' + animation);
-                    element.addEventListener('animationend', () => {
-                        element.classList.remove('animate__animated', 'animate__' + animation);
-                    }, { once: true });
-                });
-            });
-        }
-
-        // Initialize animations on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            handleAnimations();
-        });
-    </script>
+    <script src="public/assets/js/admit.js"></script>
 </body>
 </html>

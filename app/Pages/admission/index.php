@@ -1,11 +1,11 @@
 <?php
 // admission.php
-require_once 'config.php';
+require_once dirname(__DIR__, 3) . '/config.php';
 
 // Enable error logging
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error.log');
+ini_set('error_log', dirname(__DIR__, 3) . '/storage/logs/php-error.log');
 
 // Start output buffering
 ob_start();
@@ -54,7 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
     $formData = [];
     foreach ($fields as $field) {
-        $formData[$field] = filter_var($input[$field] ?? ($field === 'status' ? 'pending' : ($field === 'declaration' ? '' : 'NIL')), FILTER_SANITIZE_STRING);
+        $value = $input[$field] ?? ($field === 'status' ? 'pending' : ($field === 'declaration' ? '' : 'NIL'));
+        $formData[$field] = htmlspecialchars(trim((string)$value), ENT_QUOTES, 'UTF-8');
     }
 
     // Validate required fields
@@ -985,6 +986,6 @@ a:hover {
     </footer>
     <a href="#" class="back-to-top"><i class="fas fa-arrow-up"></i></a>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="admission.js"></script>
+    <script src="public/assets/js/admission.js"></script>
 </body>
 </html>

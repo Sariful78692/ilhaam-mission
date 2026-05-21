@@ -1,0 +1,4 @@
+.env
+error.log
+storage/logs/*.log
+!storage/logs/.gitkeep

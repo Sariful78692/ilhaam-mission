@@ -1,6 +1,6 @@
 <?php
 // index.php
-require_once 'config.php';
+require_once dirname(__DIR__, 3) . '/config.php';
 
 // Enable error reporting for debugging
 ini_set('display_errors', 1);
