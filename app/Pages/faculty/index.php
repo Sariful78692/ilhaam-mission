@@ -447,6 +447,276 @@ $conn->close();
                 display: none;
             }
         }
+            /* Professional site header and footer */
+        .navbar.professional-site-chrome, .navbar {
+            background: rgba(255,255,255,.98);
+            box-shadow: 0 4px 24px rgba(24,39,75,.09);
+            border-bottom: 1px solid #e9edf5;
+            padding: .7rem 0;
+            backdrop-filter: blur(14px);
+        }
+        .navbar .container { gap: 1rem; }
+        .navbar-brand { padding: .2rem 0; }
+        .navbar-brand .logo-container { display:flex; align-items:center; gap:.8rem; }
+        .navbar-brand .logo-text { margin-left:0; }
+        .navbar-brand .logo-title { font-size:1.18rem; letter-spacing:.035em; }
+        .navbar-brand .logo-tagline { font-size:.72rem; color:#64748b; letter-spacing:.015em; }
+        .navbar .nav-link {
+            color:#334155 !important; font-size:.84rem; font-weight:600;
+            margin:0 1px; padding:.62rem .58rem; border-radius:8px;
+        }
+        .navbar .nav-link::after { height:0; }
+        .navbar .nav-link:hover, .navbar .nav-link:focus {
+            color:var(--primary) !important; background:#f1f5ff; transform:none;
+        }
+        .navbar-toggler { border:1px solid #dbe2ef; padding:.4rem .6rem; border-radius:9px; }
+        .academy-logo { width:58px; height:58px; object-fit:contain; }
+        .footer {
+            background:#101d36; color:#d6deeb; padding:30px 0 12px;
+            border-top:4px solid #4361ee;
+        }
+        .footer:before { display:none; }
+        .footer h5 { color:#fff; font-size:.95rem; font-weight:700; margin-bottom:.65rem; padding-bottom:.45rem; }
+        .footer h5:after { width:38px; height:3px; background:#7c9cff; }
+        .footer p { color:#b7c2d5; font-size:.85rem; line-height:1.6; margin-bottom:.5rem; }
+        .footer ul li { color:#c7d0df; font-size:.84rem; line-height:1.5; overflow-wrap:anywhere; }
+        .footer a { color:#d6deeb; font-size:.88rem; }
+        .footer a:hover { color:#fff; transform:translateX(3px); }
+        .footer .social-icons { display:flex; gap:.5rem; margin-top:.75rem; }
+        .footer .social-icons a { width:38px; height:38px; margin:0; color:#fff; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.13); }
+        .footer .social-icons a:hover { background:#4361ee; transform:translateY(-2px); }
+        .footer hr { border-color:rgba(255,255,255,.16); opacity:1; margin-top:1rem !important; margin-bottom:.5rem !important; }
+        .footer .text-center p { margin:0; color:#9eabc0; font-size:.8rem; }
+        @media (max-width: 991.98px) {
+            .navbar-collapse { padding:.7rem 0 .25rem; }
+            .navbar .navbar-nav { align-items:stretch; padding-top:.4rem; }
+            .navbar .nav-link { margin:2px 0; padding:.65rem .8rem; }
+        }
+        @media (max-width: 575.98px) {
+            .academy-logo { width:48px; height:48px; }
+            .navbar-brand .logo-title { font-size:1rem; }
+            .navbar-brand .logo-tagline { font-size:.64rem; }
+            .footer { padding:24px 0 10px; }
+        }
+            /* site-motion-system */
+        @keyframes siteFadeUp {
+            from { opacity:0; transform:translateY(14px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        @keyframes siteFadeIn {
+            from { opacity:0; }
+            to { opacity:1; }
+        }
+        body { animation:siteFadeIn .45s ease-out both; }
+        .navbar { animation:siteFadeUp .55s ease-out both; }
+        .hero, .section, main > section, .banner-section {
+            animation:siteFadeUp .65s ease-out both;
+        }
+        .card, .feature-box, .notification-card, .gallery-item, .faculty-card,
+        .activity-card, .notice-card, .contact-card, .admission-card {
+            transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+        }
+        .card:hover, .feature-box:hover, .notification-card:hover, .gallery-item:hover,
+        .faculty-card:hover, .activity-card:hover, .notice-card:hover, .contact-card:hover,
+        .admission-card:hover {
+            transform:translateY(-4px);
+            box-shadow:0 12px 28px rgba(24,39,75,.13);
+        }
+        a, button, .btn, .form-control, .form-select, .social-icons a, .nav-link {
+            transition:color .2s ease, background-color .2s ease, border-color .2s ease,
+                box-shadow .2s ease, transform .2s ease;
+        }
+        .footer { padding:22px 0 8px; animation:none; }
+        .footer .container > .row:first-child > div {
+            animation:siteFadeUp .65s ease-out both;
+        }
+        .footer .container > .row:first-child > div:nth-child(2) { animation-delay:.1s; }
+        .footer .container > .row:first-child > div:nth-child(3) { animation-delay:.2s; }
+        .footer .container > .row:first-child > div:nth-child(4) { animation-delay:.3s; }
+        .footer .mb-4 { margin-bottom:.65rem !important; }
+        .footer .mb-3 { margin-bottom:.4rem !important; }
+        .footer h5 { margin-bottom:.5rem; padding-bottom:.4rem; }
+        .footer .social-icons { margin-top:.55rem; }
+        .footer hr { margin-top:.65rem !important; margin-bottom:.35rem !important; }
+        .footer .row.pt-3 { padding-top:.4rem !important; }
+        .footer .text-center p { animation:siteFadeUp .6s ease-out .25s both; }
+        .card, .feature-box, .notification-card, .gallery-item, .faculty-card,
+        .activity-card, .notice-card, .contact-card, .admission-card {
+            transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+            will-change:transform;
+        }
+        .card:hover, .feature-box:hover, .notification-card:hover, .gallery-item:hover,
+        .faculty-card:hover, .activity-card:hover, .notice-card:hover, .contact-card:hover,
+        .admission-card:hover {
+            transform:translateY(-5px);
+            box-shadow:0 14px 30px rgba(24,39,75,.16);
+        }
+        .banner-section { height:60vh; min-height:380px; }
+        @media (max-width: 992px) { .banner-section { height:50vh; min-height:320px; } }
+        @media (max-width: 576px) {
+            .footer { padding:18px 0 7px; }
+            .banner-section { height:42vh; min-height:260px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration:.01ms !important;
+                animation-iteration-count:1 !important;
+                scroll-behavior:auto !important;
+                transition-duration:.01ms !important;
+            }
+        }
+            /* site-all-text-motion */
+        @keyframes siteTextReveal {
+            from { opacity:0; transform:translateY(8px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        body :is(h1,h2,h3,h4,h5,h6,p,a,li,span,label,small,strong,em,blockquote,figcaption,legend,dt,dd,th,td) {
+            animation:siteTextReveal .65s ease-out both;
+            transition:color .25s ease, opacity .25s ease, text-shadow .25s ease;
+        }
+        body :is(h1,h2,h3,h4,h5,h6) { animation-delay:.05s; }
+        body :is(p,li,blockquote,figcaption) { animation-delay:.1s; }
+        body :is(a,label,small,strong,em,legend,dt,dd,th,td) { animation-delay:.14s; }
+        a:hover, button:hover, .btn:hover { text-shadow:0 1px 10px rgba(67,97,238,.18); }
+        @media (prefers-reduced-motion: reduce) {
+            body :is(h1,h2,h3,h4,h5,h6,p,a,li,span,label,small,strong,em,blockquote,figcaption,legend,dt,dd,th,td) {
+                animation:none !important;
+                transition:none !important;
+            }
+        }
+            /* site-footer-text-effects */
+        @keyframes footerTextIn {
+            from { opacity:0; transform:translateY(9px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        .footer h5, .footer p, .footer li, .footer a, .footer .text-center p {
+            animation:footerTextIn .65s ease-out both;
+            transition:color .25s ease, opacity .25s ease, transform .25s ease, text-shadow .25s ease;
+        }
+        .footer h5 { animation-delay:.05s; }
+        .footer p, .footer li { animation-delay:.12s; }
+        .footer li:nth-child(2), .footer p:nth-child(2) { animation-delay:.18s; }
+        .footer li:nth-child(3), .footer p:nth-child(3) { animation-delay:.24s; }
+        .footer li:nth-child(4), .footer p:nth-child(4) { animation-delay:.3s; }
+        .footer li:nth-child(5), .footer p:nth-child(5) { animation-delay:.36s; }
+        .footer a { display:inline-block; }
+        .footer a:hover { color:#fff; transform:translateX(3px); text-shadow:0 2px 12px rgba(255,255,255,.2); }
+        .footer .social-icons a:hover { transform:translateY(-3px); }
+        @media (prefers-reduced-motion: reduce) {
+            .footer h5, .footer p, .footer li, .footer a, .footer .text-center p {
+                animation:none !important;
+                transition:none !important;
+            }
+        }
+            /* site-footer-social-alignment */
+        .footer .social-icons { display:flex; align-items:center; justify-content:flex-start; gap:8px; flex-wrap:wrap; }
+        .footer .social-icons a {
+            display:inline-flex;
+            flex:0 0 38px;
+            width:38px;
+            height:38px;
+            padding:0;
+            margin:0;
+            align-items:center;
+            justify-content:center;
+            line-height:1;
+            text-align:center;
+            transform:none;
+        }
+        .footer .social-icons a i { display:block; line-height:1; margin:0; }
+        .footer .social-icons a:hover { transform:translateY(-3px); }
+        @media (max-width: 575.98px) {
+            .footer .social-icons { gap:7px; }
+            .footer .social-icons a { flex-basis:36px; width:36px; height:36px; }
+        }
+            /* site-larger-nav-labels */
+        .navbar .nav-link { font-size:.94rem; padding:.68rem .62rem; }
+        @media (max-width:991.98px) {
+            .navbar .nav-link { font-size:1rem; padding:.72rem .85rem; }
+        }
+            /* site-colorful-navbar */
+        .navbar {
+            background:linear-gradient(105deg,#f1f4ff 0%,#fff7fb 52%,#eef8ff 100%);
+            border-bottom:1px solid rgba(100,116,220,.2);
+            box-shadow:0 5px 22px rgba(57,67,135,.12);
+        }
+        .navbar .nav-link { border-radius:9px; }
+        .navbar .nav-link:hover, .navbar .nav-link:focus, .navbar .nav-link.active {
+            color:#4c35c7 !important;
+            background:linear-gradient(120deg,rgba(99,102,241,.12),rgba(236,72,153,.09));
+        }
+        .navbar .nav-link:hover { box-shadow:inset 0 -2px 0 rgba(79,70,229,.55); }
+            .footer .quick-links-grid {
+            display:grid;
+            grid-template-columns:repeat(2,minmax(0,1fr));
+            column-gap:.75rem;
+            align-items:start;
+        }
+        .footer .quick-links-grid li { margin-bottom:.4rem !important; }
+        @media (max-width:575.98px) {
+            .footer .quick-links-grid { column-gap:.4rem; }
+        }
+            /* site-contact-topbar */
+        .site-topbar {
+            position:relative;
+            z-index:1031;
+            background:linear-gradient(100deg,#087eae,#0788bd 55%,#0877a9);
+            color:#fff;
+            font-size:.84rem;
+            line-height:1.3;
+        }
+        .site-topbar > .container {
+            min-height:38px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:1rem;
+        }
+        .site-topbar-info, .site-topbar-social { display:flex; align-items:center; }
+        .site-topbar-info { gap:clamp(1rem,2.5vw,2rem); min-width:0; }
+        .site-topbar-info a, .site-topbar-address {
+            display:inline-flex; align-items:center; gap:.55rem; color:#fff;
+            white-space:nowrap; transition:opacity .2s ease;
+        }
+        .site-topbar-info a:hover, .site-topbar-social a:hover { color:#e3f3ff; opacity:.82; }
+        .site-topbar-info i { font-size:.82rem; }
+        .site-topbar-social { gap:1rem; flex:0 0 auto; }
+        .site-topbar-social a { color:#fff; transition:color .2s ease,transform .2s ease; }
+        .site-topbar-social a:hover { transform:translateY(-2px); }
+        @media (max-width:991.98px) {
+            .site-topbar-address { display:none; }
+            .site-topbar-info { gap:1rem; }
+        }
+        @media (max-width:575.98px) {
+            .site-topbar { font-size:.73rem; }
+            .site-topbar > .container { min-height:34px; gap:.5rem; }
+            .site-topbar-info { gap:.75rem; }
+            .site-topbar-info a { gap:.35rem; }
+            .site-topbar-info a:nth-child(2) span { display:none; }
+            .site-topbar-social { gap:.65rem; }
+        }
+            /* site-contact-topbar-motion */
+        @keyframes topbarReveal {
+            from { opacity:0; transform:translateY(-7px); filter:blur(1px); }
+            to { opacity:1; transform:translateY(0); filter:blur(0); }
+        }
+        .site-topbar { font-size:.94rem; }
+        .site-topbar-info a, .site-topbar-address,
+        .site-topbar-social a {
+            animation:topbarReveal .9s cubic-bezier(.2,.65,.3,1) both;
+        }
+        .site-topbar-info a:nth-child(2) { animation-delay:.14s; }
+        .site-topbar-address { animation-delay:.28s; }
+        .site-topbar-social a:nth-child(2) { animation-delay:.12s; }
+        .site-topbar-social a:nth-child(3) { animation-delay:.24s; }
+        @media (max-width:575.98px) {
+            .site-topbar { font-size:.82rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .site-topbar-info a, .site-topbar-address, .site-topbar-social a {
+                animation:none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -455,9 +725,22 @@ $conn->close();
     <div class="shape shape-2"></div>
 
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+    <div class="site-topbar">
         <div class="container">
-            <a class="navbar-brand" href="index.php">
+            <div class="site-topbar-info">
+                <a href="tel:+919091850061"><i class="fas fa-phone-alt" aria-hidden="true"></i><span>+91 9091850061</span></a>
+                <a href="mailto:childrenscorner85@gmail.com"><i class="fas fa-envelope" aria-hidden="true"></i><span>childrenscorner85@gmail.com</span></a>
+                <span class="site-topbar-address"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><span>Children's Corner, Sangrampur Road, Diamond Harbour - 743375</span></span>
+            </div>
+            <div class="site-topbar-social" aria-label="Social media links">
+                <a href="https://facebook.com/childrenscorner" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i></a>
+                <a href="https://wa.me/919091850061" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp" aria-hidden="true"></i></a>
+                <a href="https://youtube.com/childrenscorner" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube" aria-hidden="true"></i></a>
+            </div>
+        </div>
+    </div>    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="./">
                 <div class="logo-container">
                     <img src="https://ilhaammission.org/photos/logo.png" class="academy-logo" alt="Ilhaam Mission Logo" loading="lazy">
                     <div class="logo-text">
@@ -471,7 +754,7 @@ $conn->close();
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="./">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="about">About Us</a></li>
                     <li class="nav-item"><a class="nav-link" href="notice">Notices</a></li>
                     <li class="nav-item"><a class="nav-link" href="admission">Admission</a></li>
@@ -534,10 +817,18 @@ $conn->close();
                 </div>
                 <div class="col-md-4 mb-4">
                     <h5 class="animate__animated" data-animate="fadeIn">Quick Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="index.php" class="animate__animated" data-animate-hover="pulse">Home</a></li>
-                        <li><a href="about.php" class="animate__animated" data-animate-hover="pulse">About Us</a></li>
-                    </ul>
+                    <ul class="list-unstyled mt-3 quick-links-grid">
+    <li class="mb-2"><a href="./"><i class="fas fa-angle-right me-2"></i>Home</a></li>
+    <li class="mb-2"><a href="about"><i class="fas fa-angle-right me-2"></i>About Us</a></li>
+    <li class="mb-2"><a href="notice"><i class="fas fa-angle-right me-2"></i>Notices</a></li>
+    <li class="mb-2"><a href="admission"><i class="fas fa-angle-right me-2"></i>Admission</a></li>
+    <li class="mb-2"><a href="gallery"><i class="fas fa-angle-right me-2"></i>Gallery</a></li>
+    <li class="mb-2"><a href="donation"><i class="fas fa-angle-right me-2"></i>Donate</a></li>
+    <li class="mb-2"><a href="success"><i class="fas fa-angle-right me-2"></i>Success Stories</a></li>
+    <li class="mb-2"><a href="activities"><i class="fas fa-angle-right me-2"></i>Activities</a></li>
+    <li class="mb-2"><a href="faculty"><i class="fas fa-angle-right me-2"></i>Faculty</a></li>
+    <li class="mb-2"><a href="contact"><i class="fas fa-angle-right me-2"></i>Contact</a></li>
+</ul>
                 </div>
                 <div class="col-md-4 mb-4">
                     <h5 class="animate__animated" data-animate="fadeIn">Contact Us</h5>
@@ -551,7 +842,7 @@ $conn->close();
                 </div>
             </div>
             <div class="text-center mt-4">
-                <p class="animate__animated" data-animate="fadeInUp">&copy; 2025 Children's Corner Institution & Ilhaam Mission. All Rights Reserved.</p>
+                <p class="animate__animated" data-animate="fadeInUp">&copy; 2026 Children's Corner Institution & Ilhaam Mission. All Rights Reserved.</p>
             </div>
         </div>
     </footer>

@@ -103,6 +103,9 @@ RewriteEngine On
 RewriteRule ^admission\.js$ public/assets/js/admission.js [L]
 RewriteRule ^admit\.js$ public/assets/js/admit.js [L]
 
+# Canonical home URL: redirect /index and /index.php to the site root
+RewriteRule ^index(?:\.php)?/?$ ./ [R=301,L]
+
 # Public page routes
 RewriteRule ^$ app/Pages/home/index.php [L]
 RewriteRule ^index(?:\.php)?$ app/Pages/home/index.php [L]
